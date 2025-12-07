@@ -7,6 +7,7 @@
 #ifdef DEBUGTRACE_ENABLED
     #include <algorithm>
     #include <array>
+    #include <climits>
     #include <cstdlib>
     #include <cstring>
     #include <ctime>
@@ -31,16 +32,18 @@
         #include <cuchar>
     #endif
 
-    #if defined __clang__
-        #define COMPILER_VERSION " (clang " __VERSION__ ")"
-    #elif defined __GNUG__
-        #define COMPILER_VERSION " (g++ " __VERSION__ ")"
+    #define TO_STRING1(v) #v
+    #define TO_STRING(v) TO_STRING1(v)
+    #if defined __GNUG__
+        #define COMPILER_VERSION "g++ " __VERSION__ " (" TO_STRING(__cplusplus) ")"
+    #elif defined __clang__
+        #define COMPILER_VERSION "clang " __VERSION__ " (" TO_STRING(__cplusplus) ")"
     #elif defined _MSC_VER
-        #define COMPILER_VERSION  " (Microsoft Visual C++)"
+        #define COMPILER_VERSION "Microsoft Visual C++ " TO_STRING(_MSC_FULL_VER) " (" TO_STRING(_MSVC_LANG) ")"
     #endif
 
-    #define DEBUGTRACE_VERSION                   "2.0.0a2"
-    #define DEBUGTRACE_START_MESSAGE             "DebugTrace-cpp " DEBUGTRACE_VERSION COMPILER_VERSION
+    #define DEBUGTRACE_VERSION                   "2.0.0"
+    #define DEBUGTRACE_START_MESSAGE             "DebugTrace-cpp " DEBUGTRACE_VERSION " compiled with " COMPILER_VERSION
     #define DEBUGTRACE_ENTER_STRING              "Enter "
     #define DEBUGTRACE_LEAVE_STRING              "Leave "
     #define DEBUGTRACE_LIMIT_STRING              "..."
@@ -83,10 +86,10 @@
             }
     #endif // __cpp_inline_variables
 
-    #ifdef __PRETTY_FUNCTION__
+    #if defined __GNUG__ || defined __clang__
         // GCC, Clang
         #define DEBUGTRACE_ENTER debugtrace::_DebugTrace _trace(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-    #elif defined __FUNCSIG__
+    #elif defined _MSC_VER
         // Visual C++
         #define DEBUGTRACE_ENTER debugtrace::_DebugTrace _trace(__FUNCSIG__, __FILE__, __LINE__);
     #else
@@ -379,16 +382,17 @@ inline std::string _to_string(const std::wstring& wstring) noexcept {
     return string;
 #else
     mbstate_t mbstate{};
-    char char_buf[wstring.length() * sizeof(std::wstring::value_type) + 1];
-    auto char_ptr = char_buf;
+    std::string result;
+    result.reserve(wstring.length() * MB_CUR_MAX);
+    char buf[MB_LEN_MAX];
+
     for (const auto& wchar : wstring) {
-        const auto converted_count = wcrtomb(char_ptr, wchar, &mbstate);
+        const auto converted_count = wcrtomb(buf, wchar, &mbstate);
         if (converted_count == (size_t)-1)
             return "<Cannot convert the wstring to string>";
-        char_ptr += converted_count;
+        result.append(buf, converted_count);
     }
-    *char_ptr = '\0';
-    return char_buf;
+    return result;
 #endif // _WIN32
 }
 
@@ -427,16 +431,17 @@ inline std::string _to_string(const std::u16string& u16string) noexcept {
     return string;
 #else
     mbstate_t mbstate{};
-    char char_buf[u16string.length() * sizeof(std::u16string::value_type) + 1];
-    auto char_ptr = char_buf;
+    std::string result;
+    result.reserve(u16string.length() * MB_CUR_MAX);
+    char buf[MB_LEN_MAX];
+
     for (const auto& char16 : u16string) {
-        const auto converted_count = c16rtomb(char_ptr, char16, &mbstate);
+        const auto converted_count = c16rtomb(buf, char16, &mbstate);
         if (converted_count == (size_t)-1)
             return "<Cannot convert the u16string to string>";
-        char_ptr += converted_count;
+        result.append(buf, converted_count);
     }
-    *char_ptr = '\0';
-    return char_buf;
+    return result;
 #endif // _WIN32
 }
 
@@ -471,16 +476,17 @@ inline std::string _to_string(const std::u32string& u32string) noexcept {
     return "<Unimplemented(string <- u32string)>";
 #else
     mbstate_t mbstate{};
-    char char_buf[u32string.length() * sizeof(std::u32string::value_type) + 1];
-    auto char_ptr = char_buf;
+    std::string result;
+    result.reserve(u32string.length() * MB_CUR_MAX);
+    char buf[MB_LEN_MAX];
+
     for (const auto& char32 : u32string) {
-        const auto converted_count = c32rtomb(char_ptr, char32, &mbstate);
+        const auto converted_count = c32rtomb(buf, char32, &mbstate);
         if (converted_count == (size_t)-1)
             return "<Cannot convert the u32string to string>";
-        char_ptr += converted_count;
+        result.append(buf, converted_count);
     }
-    *char_ptr = '\0';
-    return char_buf;
+    return result;
 #endif // _WIN32
 }
 
@@ -666,26 +672,26 @@ std::vector<std::string> to_strings(const T* pointer) noexcept {
 /// @param value the value to output
 template <typename T1, typename T2>
 std::vector<std::string> to_strings(const std::pair<T1, T2>& value) noexcept {
-    auto firstStrings = to_strings(value.first);
-    auto secondStrings = to_strings(value.second);
+    auto first_strings = to_strings(value.first);
+    auto second_strings = to_strings(value.second);
 
-    firstStrings.back() += pair_separator;
+    first_strings.back() += pair_separator;
 
     auto index = 0;
-    for (const auto& secondString : secondStrings) {
+    for (const auto& second_string : second_strings) {
         if (index == 0) {
-            if (firstStrings.back().size() + secondString.size() <= maximum_data_output_width)
+            if (first_strings.back().size() + second_string.size() <= maximum_data_output_width)
                 // one line
-                firstStrings.back() += secondString;
+                first_strings.back() += second_string;
             else
-                firstStrings.push_back(_get_data_indent_string() + secondString);
+                first_strings.push_back(_get_data_indent_string() + second_string);
         } else {
-            firstStrings.push_back(secondString);
+            first_strings.push_back(second_string);
         }
         ++index;
     }
 
-    return firstStrings;
+    return first_strings;
 }
 
 /// Returns a string representation of the container object.
