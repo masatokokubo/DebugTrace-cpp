@@ -1,12 +1,15 @@
 /// Example.cpp 
 /// (C) 2017 Masato Kokubo
 #define _CRT_SECURE_NO_WARNINGS
-#include "Example.hpp"
+#include "example.hpp"
 #include "debugtrace.hpp"
+#include <fstream>
+#include <filesystem>
 
 DEBUGTRACE_VARIABLES
 
 int main(int argc, const char* argv[]) {
+    debugtrace::output_target = "../logs/debugtrace.log";
     DEBUGTRACE_ENTER // for Debugging
 #if defined CP_ACP
     // sets Windows code page to Japanese Shift-JIS
@@ -19,7 +22,7 @@ int main(int argc, const char* argv[]) {
 //  debugtrace::set_code_page(50220); // for Debugging
 
     // sets Windows code page to UTF-8
-        debugtrace::set_code_page(CP_UTF8); // for Debugging
+    debugtrace::set_code_page(CP_UTF8); // for Debugging
 #else
     const char* locale = setlocale(LC_CTYPE, nullptr);
     DEBUGTRACE_PRINT(locale) // for Debugging

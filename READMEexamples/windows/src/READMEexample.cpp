@@ -3,13 +3,12 @@
 #include <vector>
 
 template <typename T> class Point {
-    private:
-        T _x = 0;
-        T _y = 0;
-    public:
-        Point(T const& x, T const& y) noexcept : _x(x), _y(y) {}
-        auto x() const noexcept {return _x;}
-        auto y() const noexcept {return _y;}
+    T _x = 0;
+    T _y = 0;
+public:
+    Point(T const& x, T const& y) noexcept : _x(x), _y(y) {}
+    auto x() const noexcept {return _x;}
+    auto y() const noexcept {return _y;}
 };
 
 template <typename T> auto operator +(Point<T> const& p1, Point<T> const& p2) noexcept {

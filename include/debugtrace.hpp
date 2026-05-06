@@ -14,6 +14,7 @@
     #include <deque>
     #include <iomanip>
     #include <iostream>
+    #include <fstream>
     #include <list>
     #include <map>
     #include <memory>
@@ -42,7 +43,7 @@
         #define COMPILER_VERSION "Microsoft Visual C++ " TO_STRING(_MSC_FULL_VER) " (" TO_STRING(_MSVC_LANG) ")"
     #endif
 
-    #define DEBUGTRACE_VERSION                   "2.0.0"
+    #define DEBUGTRACE_VERSION                   "2.1.0"
     #define DEBUGTRACE_START_MESSAGE             "DebugTrace-cpp " DEBUGTRACE_VERSION " compiled with " COMPILER_VERSION
     #define DEBUGTRACE_ENTER_STRING              "Enter "
     #define DEBUGTRACE_LEAVE_STRING              "Leave "
@@ -78,7 +79,7 @@
             size_t            maximum_data_output_width = DEBUGTRACE_MAXIMUM_DATA_OUTPUT_WIDTH;\
             size_t            collection_limit          = DEBUGTRACE_COLLECTION_LIMIT;\
             bool              _initialized              = false;\
-            std::ostream&     output_stream             = std::cerr;\
+            const char*       output_target             = "std::cerr";\
             int               _code_nest_level          = 0;\
             int               _before_code_nest_level   = 0;\
             int               _data_nest_level          = 0;\
@@ -123,7 +124,7 @@ namespace debugtrace {
     inline size_t            maximum_data_output_width = DEBUGTRACE_MAXIMUM_DATA_OUTPUT_WIDTH;
     inline size_t            collection_limit          = DEBUGTRACE_COLLECTION_LIMIT;
     inline bool              _initialized              = false;
-    inline std::ostream&     output_stream             = std::cerr;
+    inline const char*       output_target             = "std::cerr";
     inline int               _code_nest_level          = 0;
     inline int               _before_code_nest_level   = 0;
     inline int               _data_nest_level          = 0;
@@ -144,7 +145,7 @@ namespace debugtrace {
     extern size_t            maximum_data_output_width;
     extern size_t            collection_limit;
     extern bool              _initialized;
-    extern std::ostream&     output_stream;
+    extern const char*       output_target;
     extern int               _code_nest_level;
     extern int               _before_code_nest_level;
     extern int               _data_nest_level;
@@ -880,7 +881,29 @@ inline void print_message(std::string message, const char file_name[] = "", int 
         log_str += ')';
     }
 
-    output_stream << log_str << std::endl;
+    if (strcmp(output_target, "std::cout") == 0) {
+        std::cout << log_str << std::endl;
+    } else if (strcmp(output_target, "std::cerr") == 0) {
+        std::cerr << log_str << std::endl;
+    } else {
+        auto file_path = output_target;
+        auto openmode = std::ios_base::app;
+        if (strncmp(file_path, "+", 1) == 0) {
+            ++file_path;
+        } else if (!_initialized) {
+            openmode = std::ios_base::trunc;
+        }
+        auto output_stream = std::ofstream(file_path, openmode);
+        if (output_stream) {
+            output_stream << log_str << std::endl;
+            output_stream.close();
+        } else {
+            auto error_message = std::string("Can't open the debugtrace::output_target (") + output_target + ").";
+            output_target = "std::cerr";
+            print_message(log_str);
+            print_message(error_message);
+        }
+    }
 }
 
 template <typename T>
@@ -900,8 +923,9 @@ void print(const char* name, const T& value, const char file_name[] = "", int li
 inline void _initialize() noexcept {
     if (!_initialized) {
         print_message(_start_message);
-        print_message("");
         _initialized = true;
+        print_message(std::string("Output: ") + output_target);
+        print_message("");
     }
 }
 

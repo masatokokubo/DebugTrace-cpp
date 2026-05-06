@@ -1,7 +1,7 @@
 /// Example4.cpp 
 /// (C) 2017 Masato Kokubo
 #include <complex>
-#include "Example.hpp"
+#include "example.hpp"
 #include "debugtrace.hpp"
 
 /// ClassA::func4

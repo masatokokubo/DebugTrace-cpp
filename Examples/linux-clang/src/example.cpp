@@ -6,6 +6,7 @@
 DEBUGTRACE_VARIABLES
 
 int main(int argc, const char* argv[]) {
+    debugtrace::output_target = "/var/tmp/debugtrace/debugtrace.log";
     DEBUGTRACE_ENTER // for Debugging
 #if defined CP_ACP
     // sets Windows code page to Japanese Shift-JIS

@@ -1,6 +1,6 @@
 /// Example1.cpp 
 /// (C) 2017 Masato Kokubo
-#include "Example.hpp"
+#include "example.hpp"
 #include "debugtrace.hpp"
 
 /// func1
